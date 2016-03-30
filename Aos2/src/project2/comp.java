@@ -1,4 +1,5 @@
 package project2;
+
 import java.util.Comparator;
 
 public class comp implements  Comparator<String>{

@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.UnknownHostException;		
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -31,11 +31,19 @@ public class Client_node {
 				if (i.split("\\s+")[0].equals(e)) {
 					String host = i.split("\\s+")[1];
 					String port = i.split("\\s+")[2];
-					Node.setClock(Node.getClock()+1);
-					String k = "req " + String.valueOf(id)+" "+String.valueOf(Node.getClock());
+					//Node.setClock(Node.getClock()+1);
+					//String k = "req " + String.valueOf(id)+" "+String.valueOf(Node.getClock());
 					
+
+					//!!!!!!!!!!!!!!!!!
+					ArrayList<Integer> cv=Node.getvClock();
+					cv.set(id, cv.get(id)+1);
+					Node.setvClock(cv);
+					String k = "req " + String.valueOf(id)+" "+Node.getvClock().toString();
+					//!!!!!!!!!!!!!!!
+
 					connect(host, port, k);
-					//System.out.println("req msg"); //```
+					
 					
 				}
 			}

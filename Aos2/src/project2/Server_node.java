@@ -2,20 +2,24 @@ package project2;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
+import java.net.ConnectException;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
 public class Server_node implements Runnable {
-	private int id;
+	private static int id;
 	private String[] all_nodes;
 	private ArrayList<String> quorum;
 	private Socket soc_server;
@@ -38,45 +42,17 @@ public class Server_node implements Runnable {
 		this.quorum = quorum;
 		this.cstime = cstime;
 	}
-
-	//public Server_node() {
+//!!!!!!!!!!!!!
+	public static void compareClk(String w){
+		ArrayList<Integer> y=Node.getvClock();
+		String[] x=w.split(", ");
+		for(int z=0;z<y.size();z++)
+			y.set(z,Math.max(Integer.parseInt(x[z]),y.get(z)));
 		
-
-	//}
-
-	/*public int compare(String x, String y) { // request priority
-
-		if (Integer.parseInt(x.split("\\s+")[1]) < Integer.parseInt(y.split("\\s+")[1])) {
-			return -1;
-		} else if (Integer.parseInt(x.split("\\s+")[1]) > Integer.parseInt(y.split("\\s+")[1])) {
-			return 1;
-		} else {
-			if (Integer.parseInt(x.split("\\s+")[0]) < Integer.parseInt(y.split("\\s+")[0])) {
-				return -1;
-			} else if (Integer.parseInt(x.split("\\s+")[0]) > Integer.parseInt(y.split("\\s+")[0])) {
-				return 1;
-			}
-		}
-		return 0;
-	}*/
-
-	/*
-	 * public void outfile() throws FileNotFoundException,
-	 * UnsupportedEncodingException {
-	 * 
-	 * int s = Node.config_file_path.lastIndexOf('/'); int d =
-	 * Node.config_file_path.lastIndexOf('.'); String filename =
-	 * Node.config_file_path.substring(s + 1, d);
-	 * 
-	 * File f = new File(filename + "-" + id + ".out"); PrintWriter writer = new
-	 * PrintWriter(f, "UTF-8"); String p = Node.getParent(); ArrayList<String> c
-	 * = Node.getChild(); if (!c.isEmpty()) Collections.sort(c); if
-	 * (p.equals("")) writer.println("*"); else writer.println(p); if
-	 * (c.isEmpty()) writer.println("*"); else for (String i : c) writer.print(i
-	 * + " ");
-	 * 
-	 * writer.close(); }
-	 */
+		y.set(id, y.get(id)+1);
+		Node.setvClock(y);
+	}
+//!!!!!!!!!!!!
 	
 	public static void setRec(boolean r)
 	{
@@ -84,19 +60,50 @@ public class Server_node implements Runnable {
 		
 	}
 
-	public void cs() throws FileNotFoundException, UnsupportedEncodingException {
+	public void cs() throws IOException,FileNotFoundException, UnsupportedEncodingException {
 		long s = System.currentTimeMillis();
-		while (System.currentTimeMillis() < s + cstime) {
+		
+		//count++;
+		/*
+		try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File("output.txt"),true))) {
+					    //bw.write("c="+count+" "+id+" "+Node.getClock()+"\n");
+					    bw.write(id+" Enter "+Node.getClock()+"\n");
+					    while (System.currentTimeMillis() < s + cstime) {
 			// inter-request delay
 			
 		}
-		count++;
-		try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File("output.txt"),true))) {
-					    bw.write("c="+count+" "+id+" "+Node.getClock()+"\n");
+						
+					    bw.write(id+" Exit"+Node.getClock()+"\n");
 					    bw.close();
 					    }catch (IOException ex) {
 					    
-					    }
+					    }*/
+			
+	Writer writer;
+		FileOutputStream FoutStream=new FileOutputStream("output-"+id+".txt", true);
+		try{		
+        
+                              writer = new BufferedWriter(new OutputStreamWriter(FoutStream, "UTF-8"));
+                              writer.append(id+" Enter "+Node.getvClock().toString()+"\n");
+			      while (System.currentTimeMillis() < s + cstime) {
+			// inter-request delay
+			
+		}
+
+
+                              writer.close();        
+      }catch(IOException ioe){ioe.printStackTrace();}finally {FoutStream.close();}
+
+//~~~Testing
+		/*Writer writer;
+		
+		Socket c = new Socket("dc43.utdallas.edu",2000); //determined by testing config
+		PrintWriter output = new PrintWriter(new OutputStreamWriter(c.getOutputStream()));
+		//output.print(String.valueOf(id)+" "+String.valueOf(cstime)+"\r\n");
+		output.print(id+" Enter "+Node.getClock()+" "+cstime+"\n");		
+		output.flush();
+		c.close();*/
+		//~~~	
 	
 	
 
@@ -132,8 +139,14 @@ public class Server_node implements Runnable {
 
 				if (s.split("\\s+")[0].equals("req")) { // request
 					System.out.println(id+" "+s); //~~~~
-					request.add(s.split("\\s+", 2)[1]);
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//request.add(s.split("\\s+", 2)[1]);
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
+					request.add(s.split("\\s+")[1]+" "+vc.split(", ")[Integer.parseInt(s.split("\\s+")[1])]);
+					compareClk(vc); 				
+					//!!!!!!!!!!
 
 					if (grant.equals("")) {
 						grant = s.split("\\s+", 2)[1];
@@ -146,8 +159,14 @@ public class Server_node implements Runnable {
 							while (System.currentTimeMillis() < t + 20) { //@@@@
 								
 							}
-								Node.setClock(Node.getClock()+1);
-								c.connect(host, port, "g " + id+" "+ String.valueOf(Node.getClock())); // add clock
+								//Node.setClock(Node.getClock()+1);
+								//c.connect(host, port, "g " + id+" "+ String.valueOf(Node.getClock())); // add clock
+								//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "g " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!									
 								break;
 							}
 						}
@@ -165,9 +184,16 @@ public class Server_node implements Runnable {
 									String host = i.split("\\s+")[1];
 									String port = i.split("\\s+")[2];
 									Client_node c = new Client_node(quorum, all_nodes, id);
-									Node.setClock(Node.getClock()+1);
-									c.connect(host, port, "f " + id+" "+String.valueOf(Node.getClock())); // add
+									//Node.setClock(Node.getClock()+1);
+									//c.connect(host, port, "f " + id+" "+String.valueOf(Node.getClock())); // add
 																		// clock
+									//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "f " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!										
+
 									break;
 								}
 							}
@@ -179,9 +205,16 @@ public class Server_node implements Runnable {
 									String host = i.split("\\s+")[1];
 									String port = i.split("\\s+")[2];
 									Client_node c = new Client_node(quorum, all_nodes, id);
-									Node.setClock(Node.getClock()+1);
-									c.connect(host, port, "i " + id+" "+String.valueOf(Node.getClock())); // add
+									//Node.setClock(Node.getClock()+1);
+									//c.connect(host, port, "i " + id+" "+String.valueOf(Node.getClock())); // add
 																		// clock
+									
+									//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "i " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!
 									break;
 								}
 							}
@@ -191,16 +224,27 @@ public class Server_node implements Runnable {
 
 				} else if (s.split("\\s+")[0].equals("i")) { // inquire
 					System.out.println(id+" "+s);//`````
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
+					
+					compareClk(vc); 				
+					//!!!!!!!!!!
 					if (failed) {
 						for (String i : all_nodes) {
 							if (i.split("\\s+")[0].equals(s.split("\\s+")[1])) {
 								String host = i.split("\\s+")[1];
 								String port = i.split("\\s+")[2];
 								Client_node c = new Client_node(quorum, all_nodes, id);
-								Node.setClock(Node.getClock()+1);
-								c.connect(host, port, "y " + id+" "+String.valueOf(Node.getClock())); // add clock
+								//Node.setClock(Node.getClock()+1);
+								//c.connect(host, port, "y " + id+" "+String.valueOf(Node.getClock())); // add clock
 								//yield = true;
+								//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "y " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!
 								break;
 							}
 						}
@@ -208,7 +252,13 @@ public class Server_node implements Runnable {
 
 				} else if (s.split("\\s+")[0].equals("f")) { // failed
 					System.out.println(id+" "+s);//```
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
+					
+					compareClk(vc); 				
+					//!!!!!!!!!!
 					failed = true;
 				}
 
@@ -217,16 +267,27 @@ public class Server_node implements Runnable {
 					
 					String top_req = request.element();
 					grant=top_req; //#############
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
-
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
+					
+					compareClk(vc); 				
+					//!!!!!!!!!!	
 					for (String i : all_nodes) {
 						if (i.split("\\s+")[0].equals(top_req.split("\\s+")[0])) {
 							String host = i.split("\\s+")[1];
 							String port = i.split("\\s+")[2];
 							Client_node c = new Client_node(quorum, all_nodes, id);
-							Node.setClock(Node.getClock()+1);
-							c.connect(host, port, "g " + id+" "+String.valueOf(Node.getClock())); // add clock
-							//request.add(s.split("\\s+", 2)[1]);
+							//Node.setClock(Node.getClock()+1);
+							//c.connect(host, port, "g " + id+" "+String.valueOf(Node.getClock())); // add clock
+							
+
+							//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "g " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!
 							break;
 						}
 					}
@@ -246,8 +307,12 @@ public class Server_node implements Runnable {
 					System.out.println(id+" "+s+" "+request);
 
 					grant=""; //#############
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
-
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
+					
+					compareClk(vc); 				
+					//!!!!!!!!!!
 					if (!request.isEmpty()) {
 						String top_req = request.element();
 						grant=top_req;
@@ -260,9 +325,14 @@ public class Server_node implements Runnable {
 							while (System.currentTimeMillis() < t + 20) { //@@@@
 								
 							}
-								Node.setClock(Node.getClock()+1);
-								c.connect(host, port, "g " + id+" "+String.valueOf(Node.getClock())); // add clock
-
+								//Node.setClock(Node.getClock()+1);
+								//c.connect(host, port, "g " + id+" "+String.valueOf(Node.getClock())); // add clock
+								//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "g " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!
 								break;
 							}
 						}
@@ -270,8 +340,12 @@ public class Server_node implements Runnable {
 
 				} else if (s.split("\\s+")[0].equals("g")) { // grant
 					System.out.println(id+" "+s+" "+request);//`````
-					compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//compareClk(Integer.parseInt(s.split("\\s+")[2]));
+					//!!!!!!!!!!!	
+					String vc=s.split("\\s+",3)[2].replace("]", "").replace("[", "");
 					
+					compareClk(vc); 				
+					//!!!!!!!!!!
 										
 					/*for(String a:request)
 					{
@@ -313,9 +387,15 @@ public class Server_node implements Runnable {
 									String host = i.split("\\s+")[1];
 									String port = i.split("\\s+")[2];
 									Client_node c = new Client_node(quorum, all_nodes, id);
-									Node.setClock(Node.getClock()+1);
-									c.connect(host, port, "r " + id+" "+String.valueOf(Node.getClock())); // add
+									//Node.setClock(Node.getClock()+1);
+									//c.connect(host, port, "r " + id+" "+String.valueOf(Node.getClock())); // add
 																		// clock
+								//!!!!!!!!!!!!
+								ArrayList<Integer> cv=Node.getvClock();
+								cv.set(id, cv.get(id)+1);
+								Node.setvClock(cv);
+								c.connect(host, port, "r " + id+" "+ Node.getvClock().toString());
+								//!!!!!!!!!!!								
 								}
 							}
 							g_copy.clear();

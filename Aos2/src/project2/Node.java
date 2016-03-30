@@ -1,5 +1,4 @@
 package project2;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,14 +25,29 @@ public class Node implements Runnable {
 	private int delay;
 	private int req_no;
 	private int cstime;
+	
 	private static volatile int clock=0;
 	private static volatile boolean rel = true;
-
+//!!!!!!!!!!!!!!!!!
+	private static volatile ArrayList<Integer> vclk = new ArrayList<Integer>(); //!!!!
+	
+	
+	public synchronized static void setvClock(ArrayList<Integer> clk) //!!!!!!
+	{
+		vclk=clk;
+	}
+	
+	public synchronized static ArrayList<Integer> getvClock()  //!!!!!!
+	{
+		return vclk;
+	}
+//!!!!!!!!!!!!!
 	public Node(int type, int id, String config_path) {
 
 		this.type = type;
 		this.identifier = id;
 		config_file_path = config_path;
+		
 	}
 	
 	public static void setRelease(boolean r)
@@ -71,7 +85,13 @@ public class Node implements Runnable {
 
 	private void runClient() throws UnknownHostException, IOException {
 		find(config_file_path, identifier);
+if(!(vclk.size()==number_of_nodes))
+{
+for(int k=0;k<number_of_nodes;k++)
+	    	vclk.add(0);
+}
 //System.out.println("client");
+		
 		while (true) {
 			Client_node c = new Client_node(quorum, all_nodes, identifier);
 			for (int z = 0; z < req_no; z++) {
@@ -97,6 +117,12 @@ public class Node implements Runnable {
 
 	private void runServer() throws IOException {
 		find(config_file_path, identifier);
+if(!(vclk.size()==number_of_nodes))
+{
+for(int k=0;k<number_of_nodes;k++)
+	    	vclk.add(0);
+}
+
 //System.out.println("server");
 		listen();
 		//display();
@@ -137,6 +163,7 @@ public class Node implements Runnable {
 			req_no = Integer.parseInt(nextLine.trim().split("\\s+")[3]);
 		}
 		this.all_nodes = new String[number_of_nodes];
+		
 		nextLine = scan_path.nextLine().trim();
 		while (nextLine.equals("") || nextLine.charAt(0) == '#') {
 			nextLine = scan_path.nextLine().trim();
